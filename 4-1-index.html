@@ -1291,7 +1291,7 @@
                 </div>
                 <div class="stat-content">
                     <div class="label">订单总数</div>
-                    <div class="value">128<span>单</span></div>
+                    <div class="value" id="statTotal">128<span>单</span></div>
                     <div class="trend up">↑ 12% 较上周</div>
                 </div>
             </div>
@@ -1308,7 +1308,7 @@
                 </div>
                 <div class="stat-content">
                     <div class="label">已打标数量</div>
-                    <div class="value">86<span>单</span></div>
+                    <div class="value" id="statMarked">86<span>单</span></div>
                     <div class="trend up">↑ 8% 较上周</div>
                 </div>
             </div>
@@ -1325,7 +1325,7 @@
                 </div>
                 <div class="stat-content">
                     <div class="label">未打标数量</div>
-                    <div class="value">42<span>单</span></div>
+                    <div class="value" id="statUnmarked">42<span>单</span></div>
                     <div class="trend down">↓ 5% 较上周</div>
                 </div>
             </div>
@@ -1342,7 +1342,7 @@
                 </div>
                 <div class="stat-content">
                     <div class="label">已绑定数量</div>
-                    <div class="value">64<span>单</span></div>
+                    <div class="value" id="statBound">64<span>单</span></div>
                     <div class="trend up">↑ 15% 较上周</div>
                 </div>
             </div>
@@ -1720,6 +1720,44 @@
         renderRunningOrders();
         renderPendingOrders();
         renderMesTable();
+
+        // 统计卡片数据自动更新
+        function updateStats() {
+            const totalEl = document.getElementById('statTotal');
+            const markedEl = document.getElementById('statMarked');
+            const unmarkedEl = document.getElementById('statUnmarked');
+            const boundEl = document.getElementById('statBound');
+
+            // 获取当前值
+            let total = parseInt(totalEl.childNodes[0].textContent);
+            let marked = parseInt(markedEl.childNodes[0].textContent);
+            let unmarked = parseInt(unmarkedEl.childNodes[0].textContent);
+            let bound = parseInt(boundEl.childNodes[0].textContent);
+
+            // 随机变化（-5 到 +5）
+            const change = Math.floor(Math.random() * 11) - 5;
+            total = Math.max(100, total + change);
+
+            // 已打标数量跟随总数变化
+            const markedChange = Math.floor(Math.random() * 7) - 3;
+            marked = Math.max(50, Math.min(total - 20, marked + markedChange));
+
+            // 未打标数量 = 总数 - 已打标
+            unmarked = total - marked;
+
+            // 已绑定数量跟随已打标变化
+            const boundChange = Math.floor(Math.random() * 5) - 2;
+            bound = Math.max(30, Math.min(marked, bound + boundChange));
+
+            // 更新显示
+            totalEl.childNodes[0].textContent = total;
+            markedEl.childNodes[0].textContent = marked;
+            unmarkedEl.childNodes[0].textContent = unmarked;
+            boundEl.childNodes[0].textContent = bound;
+        }
+
+        // 每5秒更新一次
+        setInterval(updateStats, 5000);
     </script>
 </body>
 </html>

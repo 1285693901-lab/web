@@ -984,13 +984,13 @@
                             <div class="card-title">当班产量</div>
                         </div>
                         <div class="production-display">
-                            <div class="production-number">1,286</div>
+                            <div class="production-number" id="productionNumber">1,286</div>
                             <div class="production-unit">台 / 班次</div>
                             <div class="production-target">
                                 <span class="target-label">目标</span>
-                                <span class="target-value">1,500</span>
+                                <span class="target-value" id="targetValue">1,500</span>
                                 <div class="target-progress">
-                                    <div class="target-progress-fill"></div>
+                                    <div class="target-progress-fill" id="targetProgress"></div>
                                 </div>
                             </div>
                         </div>
@@ -1136,6 +1136,47 @@
             if (productData.length > 15) productData.pop();
             renderTable();
         }, 5000);
+
+        // 当班产量数据自动更新
+        let currentProduction = 1286;
+        const targetProduction = 1500;
+
+        function updateProduction() {
+            const productionEl = document.getElementById('productionNumber');
+            const progressEl = document.getElementById('targetProgress');
+
+            // 随机增加产量（5-15台）
+            const increase = Math.floor(Math.random() * 11) + 5;
+            currentProduction += increase;
+
+            // 如果超过目标的120%，重置为初始值
+            if (currentProduction > targetProduction * 1.2) {
+                currentProduction = 1000 + Math.floor(Math.random() * 200);
+            }
+
+            // 直接更新数值（无滚动效果）
+            productionEl.textContent = currentProduction.toLocaleString();
+
+            // 更新进度条
+            const progress = Math.min((currentProduction / targetProduction) * 100, 100);
+            progressEl.style.width = progress + '%';
+
+            // 根据进度改变颜色
+            if (progress >= 100) {
+                progressEl.style.background = 'linear-gradient(90deg, #00ff88, #00ff88)';
+            } else if (progress >= 80) {
+                progressEl.style.background = 'linear-gradient(90deg, #00b4ff, #00ff88)';
+            } else {
+                progressEl.style.background = 'linear-gradient(90deg, #00b4ff, #0088ff)';
+            }
+        }
+
+        // 初始化进度条
+        const initialProgress = Math.min((currentProduction / targetProduction) * 100, 100);
+        document.getElementById('targetProgress').style.width = initialProgress + '%';
+
+        // 每5秒更新一次
+        setInterval(updateProduction, 5000);
     </script>
 </body>
 </html>
