@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上线段设备状态监控</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #061018 0%, #0d2840 50%, #081525 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(90deg, rgba(0, 50, 100, 0.9) 0%, rgba(0, 70, 140, 0.85) 50%, rgba(0, 50, 100, 0.9) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px 40px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            height: 110px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 180, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .tech-circuit {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.15;
+            pointer-events: none;
+            background-image:
+                linear-gradient(90deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%),
+                linear-gradient(0deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%);
+            background-size: 100px 100px;
+        }
+
+        .tech-dots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, rgba(0, 180, 255, 0.4) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+
+        .tech-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                linear-gradient(90deg, transparent 49%, rgba(0, 180, 255, 0.03) 50%, transparent 51%),
+                linear-gradient(0deg, transparent 49%, rgba(0, 180, 255, 0.03) 50%, transparent 51%);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        .corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: #00b4ff;
+            border-style: solid;
+        }
+
+        .corner-tl { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 5px; right: 5px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 5px; left: 5px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            position: absolute;
+            top: calc(68% + 8px);
+            left: 50%;
+            transform: translate(calc(-50% - 416px), -50%);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 100, 150, 0.6);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .nav-btn.active {
+            background: rgba(0, 180, 255, 0.25);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #00b4ff;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.4);
+        }
+
+        .tech-corner-decor {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 180, 255, 0.4);
+        }
+
+        .corner-decor-tl { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+        .corner-decor-tr { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+        .corner-decor-bl { bottom: 8px; left: 8px; border-right: none; border-top: none; }
+        .corner-decor-br { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+        .gauge-container {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .gauge-left { left: 80px; }
+        .gauge-right { right: 80px; }
+
+        .gauge {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #00b4ff;
+            border-radius: 50%;
+            position: relative;
+            background: radial-gradient(circle, rgba(0, 60, 100, 0.5) 0%, transparent 70%);
+        }
+
+        .gauge::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 45px;
+            height: 45px;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .gauge::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 3px;
+            height: 18px;
+            background: linear-gradient(180deg, #00b4ff, transparent);
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(-45deg);
+            animation: gaugeNeedle 4s ease-in-out infinite;
+        }
+
+        @keyframes gaugeNeedle {
+            0%, 100% { transform: translate(-50%, -100%) rotate(-60deg); }
+            50% { transform: translate(-50%, -100%) rotate(60deg); }
+        }
+
+        .gauge-value {
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #00b4ff;
+            white-space: nowrap;
+        }
+
+        .indicator-panel {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .panel-left { left: 160px; }
+        .panel-right { right: 160px; }
+
+        .indicator-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .indicator-light {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 180, 255, 0.5);
+        }
+
+        .indicator-light.green {
+            background: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+            animation: indicatorBlink 2s ease-in-out infinite;
+        }
+
+        .indicator-light.blue {
+            background: #00b4ff;
+            box-shadow: 0 0 8px #00b4ff;
+            animation: indicatorBlink 2s ease-in-out infinite 0.5s;
+        }
+
+        .indicator-light.orange {
+            background: #ffaa00;
+            box-shadow: 0 0 8px #ffaa00;
+            animation: indicatorBlink 2s ease-in-out infinite 1s;
+        }
+
+        .indicator-bar {
+            width: 30px;
+            height: 4px;
+            background: rgba(0, 180, 255, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .indicator-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00b4ff, #00ff88);
+            animation: barFill 3s ease-in-out infinite;
+        }
+
+        @keyframes indicatorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        @keyframes barFill {
+            0%, 100% { width: 30%; }
+            50% { width: 100%; }
+        }
+
+        /* Unit Selector */
+        .unit-selector {
+            position: absolute;
+            right: 160px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .unit-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .unit-dropdown {
+            background: rgba(0, 40, 80, 0.8);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 6px;
+            padding: 8px 15px;
+            color: #00b4ff;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            min-width: 100px;
+            transition: all 0.3s ease;
+        }
+
+        .unit-dropdown:hover {
+            border-color: rgba(0, 180, 255, 0.7);
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .unit-dropdown option {
+            background: rgba(0, 30, 60, 0.95);
+            color: #00b4ff;
+            padding: 8px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 600;
+            text-align: center;
+            color: #ffffff;
+            letter-spacing: 8px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 40px rgba(0, 180, 255, 0.8), 0 0 80px rgba(0, 180, 255, 0.4);
+        }
+
+        .header-subtitle {
+            text-align: center;
+            color: rgba(0, 180, 255, 0.6);
+            font-size: 14px;
+            margin-top: 8px;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .header-subtitle::before,
+        .header-subtitle::after {
+            content: '';
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5));
+        }
+
+        .header-subtitle::after {
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 0.6fr 0.4fr;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Monitor Panel */
+        .monitor-panel {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.75) 0%, rgba(0, 30, 60, 0.85) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .monitor-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+        }
+
+        .monitor-icon {
+            width: 28px;
+            height: 28px;
+            background: rgba(0, 180, 255, 0.15);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .monitor-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: #00b4ff;
+        }
+
+        .monitor-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .monitor-content {
+            flex: 1;
+            background: rgba(0, 20, 40, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .monitor-content img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Right Section - PLC */
+        .right-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Bottom Section - PFID */
+        .bottom-section {
+            display: flex;
+            flex-direction: column;
+            height: 380px;
+            flex-shrink: 0;
+            margin-top: 15px;
+        }
+
+        .device-panel {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.75) 0%, rgba(0, 30, 60, 0.85) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .device-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+        }
+
+        .device-panel-icon {
+            width: 28px;
+            height: 28px;
+            background: rgba(0, 180, 255, 0.15);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .device-panel-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: #00b4ff;
+        }
+
+        .device-panel-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .device-count {
+            margin-left: auto;
+            background: rgba(0, 180, 255, 0.2);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #00b4ff;
+        }
+
+        .device-grid {
+            display: grid;
+            gap: 8px;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .device-grid::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .device-grid::-webkit-scrollbar-track {
+            background: rgba(0, 180, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .device-grid::-webkit-scrollbar-thumb {
+            background: rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+        }
+
+        .plc-grid {
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+        }
+
+        .pfid-grid {
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+        }
+
+        .device-card {
+            background: rgba(0, 40, 80, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.25);
+            border-radius: 8px;
+            padding: 6px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .device-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--status-color, #00ff88);
+        }
+
+        .device-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .device-card.offline {
+            background: rgba(80, 20, 20, 0.7);
+            border-color: rgba(255, 80, 80, 0.5);
+            animation: alertPulse 1.5s ease-in-out infinite;
+        }
+
+        .device-card.offline::before {
+            background: #ff4444;
+        }
+
+        @keyframes alertPulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 68, 68, 0.3); }
+            50% { box-shadow: 0 0 15px rgba(255, 68, 68, 0.6); }
+        }
+
+        .device-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .device-number {
+            background: rgba(0, 180, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        .device-card.offline .device-number {
+            background: rgba(255, 68, 68, 0.3);
+        }
+
+        .device-ip {
+            font-size: 9px;
+            color: rgba(0, 180, 255, 0.7);
+            font-family: 'Consolas', monospace;
+        }
+
+        .device-card.offline .device-ip {
+            color: rgba(255, 150, 150, 0.8);
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            width: fit-content;
+        }
+
+        /* 运行 - 绿色 */
+        .device-status.running {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        /* 在线 - 蓝色 */
+        .device-status.online {
+            background: rgba(0, 180, 255, 0.15);
+            color: #00b4ff;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+        }
+
+        /* 直通 - 紫色 */
+        .device-status.direct {
+            background: rgba(180, 100, 255, 0.15);
+            color: #b464ff;
+            border: 1px solid rgba(180, 100, 255, 0.3);
+        }
+
+        /* 离线 - 红色 */
+        .device-status.offline {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 68, 68, 0.4);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .pfid-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px 8px;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            flex: 1;
+        }
+
+        .pfid-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pfid-label {
+            color: rgba(0, 180, 255, 0.6);
+            white-space: nowrap;
+        }
+
+        .pfid-value {
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Consolas', monospace;
+            text-align: right;
+        }
+
+        .pfid-value.ok {
+            color: #00ff88;
+        }
+
+        .pfid-card {
+            min-height: 110px;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.1), transparent);
+            animation: scanMove 3s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scanMove {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+
+        .glow-effect {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 180, 255, 0.08) 0%, transparent 60%);
+            pointer-events: none;
+            animation: cardGlow 6s ease-in-out infinite;
+        }
+
+        @keyframes cardGlow {
+            0%, 100% { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
+            50% { opacity: 0.6; transform: scale(1.2) rotate(180deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-bg"></div>
+            <div class="tech-circuit"></div>
+            <div class="tech-dots"></div>
+            <div class="tech-lines"></div>
+            <div class="tech-corner-decor corner-decor-tl"></div>
+            <div class="tech-corner-decor corner-decor-tr"></div>
+            <div class="tech-corner-decor corner-decor-bl"></div>
+            <div class="tech-corner-decor corner-decor-br"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+
+            <div class="gauge-container gauge-left">
+                <div class="gauge">
+                    <span class="gauge-value">96%</span>
+                </div>
+            </div>
+
+            <div class="indicator-panel panel-left">
+                <div class="indicator-row">
+                    <div class="indicator-light green"></div>
+                    <div class="indicator-bar"><div class="indicator-bar-fill"></div></div>
+                </div>
+                <div class="indicator-row">
+                    <div class="indicator-light blue"></div>
+                    <div class="indicator-bar"><div class="indicator-bar-fill" style="animation-delay: 0.5s;"></div></div>
+                </div>
+                <div class="indicator-row">
+                    <div class="indicator-light orange"></div>
+                    <div class="indicator-bar"><div class="indicator-bar-fill" style="animation-delay: 1s;"></div></div>
+                </div>
+            </div>
+
+            <div class="unit-selector">
+                <span class="unit-label">单元</span>
+                <select class="unit-dropdown">
+                    <option value="online" selected>上线段</option>
+                    <option value="offline">下线段</option>
+                    <option value="middle">中线段</option>
+                </select>
+            </div>
+
+            <div class="nav-buttons">
+                <a href="4-1-index.html" class="nav-btn">总装产线</a>
+                <a href="4-2-product-launch.html" class="nav-btn">产品上线</a>
+                <a href="5-equipment-monitor.html" class="nav-btn active">设备监控</a>
+            </div>
+            <h1>上线段设备状态监控</h1>
+            <div class="header-subtitle">EQUIPMENT STATUS MONITORING</div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Monitor Panel (Left) -->
+            <div class="monitor-panel">
+                <div class="glow-effect"></div>
+                <div class="scan-line"></div>
+                <div class="monitor-header">
+                    <div class="monitor-icon">
+                        <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM5 15h14v2H5z"/></svg>
+                    </div>
+                    <div class="monitor-title">产线实时监控</div>
+                </div>
+                <div class="monitor-content">
+                    <img src="总装产线数据驱动指挥调度中心2-打包段.jpg" alt="产线布局图" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div style="display: none; flex-direction: column; align-items: center; justify-content: center; color: rgba(0,180,255,0.5);">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="rgba(0,180,255,0.3)">
+                            <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM5 15h14v2H5z"/>
+                        </svg>
+                        <p style="margin-top: 15px; font-size: 14px;">请放置产线参考图</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLC Panel (Right) -->
+            <div class="device-panel right-section">
+                <div class="device-panel-header">
+                    <div class="device-panel-icon">
+                        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 6h16v4H4V6zm0 12v-6h16v6H4z"/></svg>
+                    </div>
+                    <div class="device-panel-title">PLC 设备状态</div>
+                </div>
+                <div class="device-grid plc-grid" id="plcGrid">
+                </div>
+            </div>
+        </div>
+
+        <!-- PFID Panel (Bottom) -->
+        <div class="device-panel bottom-section">
+            <div class="device-panel-header">
+                <div class="device-panel-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                </div>
+                <div class="device-panel-title">PFID 设备状态</div>
+            </div>
+            <div class="device-grid pfid-grid" id="pfidGrid">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PLC Data
+        const plcData = [
+            { id: 1, ip: '192.168.1.101', status: '运行' },
+            { id: 2, ip: '192.168.1.102', status: '运行' },
+            { id: 3, ip: '192.168.1.103', status: '在线' },
+            { id: 4, ip: '192.168.1.104', status: '运行' },
+            { id: 5, ip: '192.168.1.105', status: '直通' },
+            { id: 6, ip: '192.168.1.106', status: '运行' },
+            { id: 7, ip: '192.168.1.107', status: '在线' },
+            { id: 8, ip: '192.168.1.108', status: '运行' },
+            { id: 9, ip: '192.168.1.109', status: '运行' },
+            { id: 10, ip: '192.168.1.110', status: '离线' },
+            { id: 11, ip: '192.168.1.111', status: '运行' },
+            { id: 12, ip: '192.168.1.112', status: '在线' },
+            { id: 13, ip: '192.168.1.113', status: '运行' },
+            { id: 14, ip: '192.168.1.114', status: '直通' },
+            { id: 15, ip: '192.168.1.115', status: '运行' },
+            { id: 16, ip: '192.168.1.116', status: '运行' },
+            { id: 17, ip: '192.168.1.117', status: '在线' },
+            { id: 18, ip: '192.168.1.118', status: '运行' },
+            { id: 19, ip: '192.168.1.119', status: '运行' },
+            { id: 20, ip: '192.168.1.120', status: '在线' },
+        ];
+
+        // PFID Data
+        const pfidData = [
+            { id: 1, ip: '192.168.2.101', status: '在线', cardNo: 'CARD-001', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 2, ip: '192.168.2.102', status: '在线', cardNo: 'CARD-002', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 3, ip: '192.168.2.103', status: '离线', cardNo: 'CARD-003', lineSignal: '0', deviceSignal: '0', stopSignal: '0', releaseSignal: '0', completeSignal: '0' },
+            { id: 4, ip: '192.168.2.104', status: '在线', cardNo: 'CARD-004', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 5, ip: '192.168.2.105', status: '在线', cardNo: 'CARD-005', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 6, ip: '192.168.2.106', status: '在线', cardNo: 'CARD-006', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 7, ip: '192.168.2.107', status: '在线', cardNo: 'CARD-007', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 8, ip: '192.168.2.108', status: '离线', cardNo: 'CARD-008', lineSignal: '0', deviceSignal: '0', stopSignal: '0', releaseSignal: '0', completeSignal: '0' },
+            { id: 9, ip: '192.168.2.109', status: '在线', cardNo: 'CARD-009', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 10, ip: '192.168.2.110', status: '在线', cardNo: 'CARD-010', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 11, ip: '192.168.2.111', status: '在线', cardNo: 'CARD-011', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 12, ip: '192.168.2.112', status: '在线', cardNo: 'CARD-012', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 13, ip: '192.168.2.113', status: '离线', cardNo: 'CARD-013', lineSignal: '0', deviceSignal: '0', stopSignal: '0', releaseSignal: '0', completeSignal: '0' },
+            { id: 14, ip: '192.168.2.114', status: '在线', cardNo: 'CARD-014', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 15, ip: '192.168.2.115', status: '在线', cardNo: 'CARD-015', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 16, ip: '192.168.2.116', status: '在线', cardNo: 'CARD-016', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 17, ip: '192.168.2.117', status: '在线', cardNo: 'CARD-017', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+            { id: 18, ip: '192.168.2.118', status: '在线', cardNo: 'CARD-018', lineSignal: '1', deviceSignal: '1', stopSignal: '0', releaseSignal: '1', completeSignal: 'OK' },
+        ];
+
+        function getStatusColor(status) {
+            switch(status) {
+                case '运行': return '#00ff88';
+                case '在线': return '#00b4ff';
+                case '直通': return '#b464ff';
+                case '离线': return '#ff4444';
+                default: return '#00ff88';
+            }
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case '运行': return 'running';
+                case '在线': return 'online';
+                case '直通': return 'direct';
+                case '离线': return 'offline';
+                default: return 'running';
+            }
+        }
+
+        function renderPLC() {
+            const grid = document.getElementById('plcGrid');
+            grid.innerHTML = plcData.map(item => `
+                <div class="device-card ${item.status === '离线' ? 'offline' : ''}" style="--status-color: ${getStatusColor(item.status)}">
+                    <div class="device-card-header">
+                        <span class="device-number">#${String(item.id).padStart(2, '0')}</span>
+                        <div class="device-status ${getStatusClass(item.status)}">
+                            <span class="status-dot"></span>
+                            ${item.status}
+                        </div>
+                    </div>
+                    <div class="device-ip">${item.ip}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderPFID() {
+            const grid = document.getElementById('pfidGrid');
+            grid.innerHTML = pfidData.map(item => `
+                <div class="device-card ${item.status === '离线' ? 'offline' : ''}" style="--status-color: ${getStatusColor(item.status)}">
+                    <div class="device-card-header">
+                        <span class="device-number">#${String(item.id).padStart(2, '0')}</span>
+                        <div class="device-status ${getStatusClass(item.status)}">
+                            <span class="status-dot"></span>
+                            ${item.status}
+                        </div>
+                    </div>
+                    <div class="device-ip">${item.ip}</div>
+                    <div class="pfid-info">
+                        <div class="pfid-info-row">
+                            <span class="pfid-label">卡号:</span>
+                            <span class="pfid-value">${item.cardNo}</span>
+                        </div>
+                        <div class="pfid-info-row">
+                            <span class="pfid-label">线体到位:</span>
+                            <span class="pfid-value">${item.lineSignal}</span>
+                        </div>
+                        <div class="pfid-info-row">
+                            <span class="pfid-label">设备到位:</span>
+                            <span class="pfid-value">${item.deviceSignal}</span>
+                        </div>
+                        <div class="pfid-info-row">
+                            <span class="pfid-label">阻挡器:</span>
+                            <span class="pfid-value">${item.stopSignal}</span>
+                        </div>
+                        <div class="pfid-info-row">
+                            <span class="pfid-label">线体放行:</span>
+                            <span class="pfid-value">${item.releaseSignal}</span>
+                        </div>
+                        <div class="pfid-info-row">
+                            <span class="pfid-label">完成信号:</span>
+                            <span class="pfid-value ${item.completeSignal === 'OK' ? 'ok' : ''}">${item.completeSignal}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        renderPLC();
+        renderPFID();
+
+        // Simulate random status changes
+        setInterval(() => {
+            const randomPLC = Math.floor(Math.random() * plcData.length);
+            const statuses = ['运行', '在线', '直通', '离线'];
+            plcData[randomPLC].status = statuses[Math.floor(Math.random() * statuses.length)];
+            renderPLC();
+        }, 8000);
+
+        setInterval(() => {
+            const randomPFID = Math.floor(Math.random() * pfidData.length);
+            pfidData[randomPFID].status = Math.random() > 0.8 ? '离线' : '在线';
+            if (pfidData[randomPFID].status === '离线') {
+                pfidData[randomPFID].lineSignal = '0';
+                pfidData[randomPFID].deviceSignal = '0';
+                pfidData[randomPFID].completeSignal = '0';
+            } else {
+                pfidData[randomPFID].lineSignal = '1';
+                pfidData[randomPFID].deviceSignal = '1';
+                pfidData[randomPFID].completeSignal = 'OK';
+            }
+            renderPFID();
+        }, 10000);
+    </script>
+</body>
+</html>

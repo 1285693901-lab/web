@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品上线看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #061018 0%, #0d2840 50%, #081525 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(90deg, rgba(0, 50, 100, 0.9) 0%, rgba(0, 70, 140, 0.85) 50%, rgba(0, 50, 100, 0.9) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px 40px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            height: 110px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 180, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .tech-circuit {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.15;
+            pointer-events: none;
+            background-image:
+                linear-gradient(90deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%),
+                linear-gradient(0deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%);
+            background-size: 100px 100px;
+        }
+
+        .tech-dots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, rgba(0, 180, 255, 0.4) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+
+        .tech-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                linear-gradient(90deg, transparent 49%, rgba(0, 180, 255, 0.03) 50%, transparent 51%),
+                linear-gradient(0deg, transparent 49%, rgba(0, 180, 255, 0.03) 50%, transparent 51%);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        .corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: #00b4ff;
+            border-style: solid;
+        }
+
+        .corner-tl { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 5px; right: 5px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 5px; left: 5px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            position: absolute;
+            top: calc(68% + 8px);
+            left: 50%;
+            transform: translate(calc(-50% - 416px), -50%);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 100, 150, 0.6);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .nav-btn.active {
+            background: rgba(0, 180, 255, 0.25);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #00b4ff;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.4);
+        }
+
+        .header-icon-left, .header-icon-right {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 280px;
+            height: 100px;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .header-icon-left { left: 20px; }
+        .header-icon-right { right: 20px; }
+
+        .header-icon-left svg, .header-icon-right svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .gauge-container {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .gauge-left { left: 80px; }
+        .gauge-right { right: 80px; }
+
+        .gauge {
+            width: 70px;
+            height: 70px;
+            border: 2px solid #00b4ff;
+            border-radius: 50%;
+            position: relative;
+            background: radial-gradient(circle, rgba(0, 60, 100, 0.5) 0%, transparent 70%);
+        }
+
+        .gauge::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .gauge::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, #00b4ff, transparent);
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(-45deg);
+            animation: gaugeNeedle 4s ease-in-out infinite;
+        }
+
+        @keyframes gaugeNeedle {
+            0%, 100% { transform: translate(-50%, -100%) rotate(-60deg); }
+            50% { transform: translate(-50%, -100%) rotate(60deg); }
+        }
+
+        .gauge-value {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #00b4ff;
+            white-space: nowrap;
+        }
+
+        .indicator-panel {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .panel-left { left: 170px; }
+        .panel-right { right: 170px; }
+
+        .indicator-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .indicator-light {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 180, 255, 0.5);
+        }
+
+        .indicator-light.green {
+            background: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+            animation: indicatorBlink 2s ease-in-out infinite;
+        }
+
+        .indicator-light.blue {
+            background: #00b4ff;
+            box-shadow: 0 0 8px #00b4ff;
+            animation: indicatorBlink 2s ease-in-out infinite 0.5s;
+        }
+
+        .indicator-light.orange {
+            background: #ffaa00;
+            box-shadow: 0 0 8px #ffaa00;
+            animation: indicatorBlink 2s ease-in-out infinite 1s;
+        }
+
+        .indicator-bar {
+            width: 30px;
+            height: 4px;
+            background: rgba(0, 180, 255, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .indicator-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00b4ff, #00ff88);
+            animation: barFill 3s ease-in-out infinite;
+        }
+
+        @keyframes indicatorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        @keyframes barFill {
+            0%, 100% { width: 30%; }
+            50% { width: 100%; }
+        }
+
+        .tech-corner-decor {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 180, 255, 0.4);
+        }
+
+        .corner-decor-tl { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+        .corner-decor-tr { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+        .corner-decor-bl { bottom: 8px; left: 8px; border-right: none; border-top: none; }
+        .corner-decor-br { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 600;
+            text-align: center;
+            color: #ffffff;
+            letter-spacing: 8px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 40px rgba(0, 180, 255, 0.8), 0 0 80px rgba(0, 180, 255, 0.4);
+        }
+
+        .header-subtitle {
+            text-align: center;
+            color: rgba(0, 180, 255, 0.6);
+            font-size: 14px;
+            margin-top: 8px;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .header-subtitle::before,
+        .header-subtitle::after {
+            content: '';
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5));
+        }
+
+        .header-subtitle::after {
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .top-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            flex: 1;
+        }
+
+        .top-cards .card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-cards .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .bottom-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            flex: 1;
+        }
+
+        .bottom-cards .card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bottom-cards .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        .card {
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--accent-color, #00b4ff);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+        }
+
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(var(--rgb-color, 0, 180, 255), 0.15);
+            border: 1px solid rgba(var(--rgb-color, 0, 180, 255), 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--accent-color, #00b4ff);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.08);
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-size: 12px;
+            color: rgba(0, 180, 255, 0.6);
+        }
+
+        .data-value {
+            font-size: 13px;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .data-value.success {
+            color: #00ff88;
+        }
+
+        .data-value.warning {
+            color: #ffaa00;
+        }
+
+        .data-value.error {
+            color: #ff6b6b;
+        }
+
+        .production-card {
+            grid-column: span 1;
+        }
+
+        .production-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 10px 0;
+        }
+
+        .production-number {
+            font-size: 64px;
+            font-weight: 700;
+            background: linear-gradient(180deg, #fff 0%, #00b4ff 50%, #00ff88 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 60px rgba(0, 180, 255, 0.5);
+            line-height: 1;
+            position: relative;
+        }
+
+        .production-number::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+            border-radius: 2px;
+        }
+
+        .production-unit {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 10px;
+            letter-spacing: 2px;
+        }
+
+        .production-target {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: rgba(0, 180, 255, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 180, 255, 0.2);
+        }
+
+        .target-label {
+            font-size: 12px;
+            color: rgba(0, 180, 255, 0.6);
+        }
+
+        .target-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #00ff88;
+        }
+
+        .target-progress {
+            width: 100px;
+            height: 6px;
+            background: rgba(0, 180, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .target-progress-fill {
+            height: 100%;
+            width: 85%;
+            background: linear-gradient(90deg, #00b4ff, #00ff88);
+            border-radius: 3px;
+            animation: progressPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes progressPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .right-panel {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.75) 0%, rgba(0, 30, 60, 0.85) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 16px 24px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 180, 255, 0.15);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panel-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: #00b4ff;
+            filter: drop-shadow(0 0 6px rgba(0, 180, 255, 0.5));
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .panel-count {
+            margin-left: auto;
+            background: rgba(0, 180, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #00b4ff;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow: hidden;
+            padding: 12px;
+        }
+
+        /* Launch Table Scroll Animation */
+        .launch-table-fixed {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-bottom: 0;
+            table-layout: fixed;
+        }
+
+        .launch-table-fixed thead {
+            background: rgba(0, 50, 100, 0.95);
+        }
+
+        .launch-table-fixed th {
+            padding: 12px 8px;
+            text-align: left;
+            color: rgba(0, 180, 255, 0.9);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.3);
+        }
+
+        .launch-table-fixed th:nth-child(1) { width: 8%; }
+        .launch-table-fixed th:nth-child(2) { width: 16%; }
+        .launch-table-fixed th:nth-child(3) { width: 10%; }
+        .launch-table-fixed th:nth-child(4) { width: 14%; }
+        .launch-table-fixed th:nth-child(5) { width: 10%; }
+        .launch-table-fixed th:nth-child(6) { width: 10%; }
+        .launch-table-fixed th:nth-child(7) { width: 10%; }
+        .launch-table-fixed th:nth-child(8) { width: 14%; }
+        .launch-table-fixed th:nth-child(9) { width: 8%; text-align: center; }
+
+        .launch-scroll-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .launch-scroll-content {
+            animation: launchScrollUp 20s linear infinite;
+        }
+
+        .launch-scroll-container:hover .launch-scroll-content {
+            animation-play-state: paused;
+        }
+
+        @keyframes launchScrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        .launch-scroll-content table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            table-layout: fixed;
+        }
+
+        .launch-scroll-content td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.1);
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .launch-scroll-content td:nth-child(1) { width: 8%; }
+        .launch-scroll-content td:nth-child(2) { width: 16%; }
+        .launch-scroll-content td:nth-child(3) { width: 10%; }
+        .launch-scroll-content td:nth-child(4) { width: 14%; }
+        .launch-scroll-content td:nth-child(5) { width: 10%; }
+        .launch-scroll-content td:nth-child(6) { width: 10%; }
+        .launch-scroll-content td:nth-child(7) { width: 10%; }
+        .launch-scroll-content td:nth-child(8) { width: 14%; }
+        .launch-scroll-content td:nth-child(9) { width: 8%; text-align: center; }
+
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.1);
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        tr:hover td {
+            background: rgba(0, 180, 255, 0.08);
+        }
+
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .status-online {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-pending {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .status-icon {
+            width: 12px;
+            height: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .glow-effect {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(var(--rgb-color, 0, 180, 255), 0.1) 0%, transparent 60%);
+            pointer-events: none;
+            animation: cardGlow 6s ease-in-out infinite;
+        }
+
+        @keyframes cardGlow {
+            0%, 100% { opacity: 0.4; transform: scale(0.8) rotate(0deg); }
+            50% { opacity: 0.8; transform: scale(1.2) rotate(180deg); }
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.1), transparent);
+            animation: scanMove 3s linear infinite;
+        }
+
+        @keyframes scanMove {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-bg"></div>
+            <div class="tech-circuit"></div>
+            <div class="tech-dots"></div>
+            <div class="tech-lines"></div>
+            <div class="tech-corner-decor corner-decor-tl"></div>
+            <div class="tech-corner-decor corner-decor-tr"></div>
+            <div class="tech-corner-decor corner-decor-bl"></div>
+            <div class="tech-corner-decor corner-decor-br"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+
+            <div class="gauge-container gauge-left">
+                <div class="gauge">
+                    <span class="gauge-value">92%</span>
+                </div>
+            </div>
+
+            <div class="indicator-panel panel-left">
+                <div class="indicator-row">
+                    <div class="indicator-light green"></div>
+                    <div class="indicator-bar"><div class="indicator-bar-fill"></div></div>
+                </div>
+                <div class="indicator-row">
+                    <div class="indicator-light blue"></div>
+                    <div class="indicator-bar"><div class="indicator-bar-fill" style="animation-delay: 0.5s;"></div></div>
+                </div>
+                <div class="indicator-row">
+                    <div class="indicator-light orange"></div>
+                    <div class="indicator-bar"><div class="indicator-bar-fill" style="animation-delay: 1s;"></div></div>
+                </div>
+            </div>
+
+            <div class="header-icon-left">
+                <svg viewBox="0 0 280 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="0" y1="50" x2="60" y2="50" stroke="#00b4ff" stroke-width="1"/>
+                    <line x1="60" y1="30" x2="60" y2="70" stroke="#00b4ff" stroke-width="1"/>
+                    <rect x="60" y="35" width="25" height="30" stroke="#00b4ff" stroke-width="1" fill="rgba(0,180,255,0.1)"/>
+                    <line x1="85" y1="50" x2="120" y2="50" stroke="#00b4ff" stroke-width="1"/>
+                    <polygon points="120,40 140,50 120,60" fill="#00b4ff" opacity="0.8"/>
+                    <line x1="145" y1="50" x2="200" y2="50" stroke="#00b4ff" stroke-width="1"/>
+                    <circle cx="210" cy="50" r="6" stroke="#00b4ff" stroke-width="1" fill="rgba(0,180,255,0.2)"/>
+                    <circle cx="210" cy="50" r="3" fill="#00b4ff"/>
+                    <line x1="220" y1="50" x2="280" y2="50" stroke="#00b4ff" stroke-width="1" stroke-dasharray="4 4"/>
+                    <line x1="40" y1="20" x2="40" y2="80" stroke="#00b4ff" stroke-width="0.5" opacity="0.3"/>
+                    <line x1="100" y1="15" x2="100" y2="85" stroke="#00b4ff" stroke-width="0.5" opacity="0.3"/>
+                </svg>
+            </div>
+
+            <div class="header-icon-right">
+                <svg viewBox="0 0 280 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="280" y1="50" x2="220" y2="50" stroke="#00b4ff" stroke-width="1"/>
+                    <line x1="220" y1="30" x2="220" y2="70" stroke="#00b4ff" stroke-width="1"/>
+                    <rect x="195" y="35" width="25" height="30" stroke="#00b4ff" stroke-width="1" fill="rgba(0,180,255,0.1)"/>
+                    <line x1="195" y1="50" x2="160" y2="50" stroke="#00b4ff" stroke-width="1"/>
+                    <polygon points="160,40 140,50 160,60" fill="#00b4ff" opacity="0.8"/>
+                    <line x1="135" y1="50" x2="80" y2="50" stroke="#00b4ff" stroke-width="1"/>
+                    <circle cx="70" cy="50" r="6" stroke="#00b4ff" stroke-width="1" fill="rgba(0,180,255,0.2)"/>
+                    <circle cx="70" cy="50" r="3" fill="#00b4ff"/>
+                    <line x1="60" y1="50" x2="0" y2="50" stroke="#00b4ff" stroke-width="1" stroke-dasharray="4 4"/>
+                    <line x1="240" y1="20" x2="240" y2="80" stroke="#00b4ff" stroke-width="0.5" opacity="0.3"/>
+                    <line x1="180" y1="15" x2="180" y2="85" stroke="#00b4ff" stroke-width="0.5" opacity="0.3"/>
+                </svg>
+            </div>
+
+            <div class="gauge-container gauge-right">
+                <div class="gauge">
+                    <span class="gauge-value">88%</span>
+                </div>
+            </div>
+
+            <div class="indicator-panel panel-right">
+                <div class="indicator-row">
+                    <div class="indicator-light green"></div>
+                    <div class="indicator-bar"><div class="indicator-bar-fill"></div></div>
+                </div>
+                <div class="indicator-row">
+                    <div class="indicator-light blue"></div>
+                    <div class="indicator-bar"><div class="indicator-bar-fill" style="animation-delay: 0.5s;"></div></div>
+                </div>
+                <div class="indicator-row">
+                    <div class="indicator-light orange"></div>
+                    <div class="indicator-bar"><div class="indicator-bar-fill" style="animation-delay: 1s;"></div></div>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <a href="4-1-index.html" class="nav-btn">总装产线</a>
+                <a href="4-2-product-launch.html" class="nav-btn active">产品上线</a>
+                <a href="5-equipment-monitor.html" class="nav-btn">设备监控</a>
+            </div>
+            <h1>产品上线看板</h1>
+            <div class="header-subtitle">PRODUCT LAUNCH DASHBOARD</div>
+        </header>
+
+        <div class="main-content">
+            <div class="left-section">
+                <div class="top-cards">
+                    <div class="card" style="--accent-color: #00b4ff; --rgb-color: 0, 180, 255;">
+                        <div class="glow-effect"></div>
+                        <div class="scan-line"></div>
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M3 5v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.11 0-2 .9-2 2zm12 4c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3zm-9 8c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1H6v-1z"/></svg>
+                            </div>
+                            <div class="card-title">上线绑定</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="data-row">
+                                <span class="data-label">卡号</span>
+                                <span class="data-value">CARD-2024-001</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">顶部扫码</span>
+                                <span class="data-value">TOP-8892-7741</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">侧面扫码</span>
+                                <span class="data-value">SIDE-5521-9983</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">绑定结果</span>
+                                <span class="data-value success">✓ 绑定成功</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">空板信号</span>
+                                <span class="data-value">否</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="--accent-color: #ffaa00; --rgb-color: 255, 170, 0;">
+                        <div class="glow-effect"></div>
+                        <div class="scan-line"></div>
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                            </div>
+                            <div class="card-title">压缩机防错</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="data-row">
+                                <span class="data-label">卡号</span>
+                                <span class="data-value">COMP-2024-015</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">扫码</span>
+                                <span class="data-value">SCAN-3321-8847</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">防错结果</span>
+                                <span class="data-value success">✓ 通过</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">基恩士视觉</span>
+                                <span class="data-value success">OK</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">海康视觉</span>
+                                <span class="data-value success">OK</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">空板信号</span>
+                                <span class="data-value">否</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card production-card" style="--accent-color: #00ff88; --rgb-color: 0, 255, 136;">
+                        <div class="glow-effect"></div>
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                            </div>
+                            <div class="card-title">当班产量</div>
+                        </div>
+                        <div class="production-display">
+                            <div class="production-number">1,286</div>
+                            <div class="production-unit">台 / 班次</div>
+                            <div class="production-target">
+                                <span class="target-label">目标</span>
+                                <span class="target-value">1,500</span>
+                                <div class="target-progress">
+                                    <div class="target-progress-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bottom-cards">
+                    <div class="card" style="--accent-color: #00b4ff; --rgb-color: 0, 180, 255;">
+                        <div class="glow-effect"></div>
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                            </div>
+                            <div class="card-title">上线绑定汇总</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="data-row">
+                                <span class="data-label">MES绑定(上面)</span>
+                                <span class="data-value">1,156</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">MES绑定(侧面)</span>
+                                <span class="data-value">1,089</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="--accent-color: #ff6b9d; --rgb-color: 255, 107, 157;">
+                        <div class="glow-effect"></div>
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                            </div>
+                            <div class="card-title">压缩防错汇总</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="data-row">
+                                <span class="data-label">压缩机(里面)</span>
+                                <span class="data-value">1,203</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">压缩机(外面)</span>
+                                <span class="data-value">1,198</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="panel-header">
+                    <div class="panel-icon">
+                        <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                    </div>
+                    <div class="panel-title">产品上线列表</div>
+                    <div class="panel-count">共 1,286 条</div>
+                </div>
+                <div class="panel-content">
+                    <table class="launch-table-fixed">
+                        <thead>
+                            <tr>
+                                <th>编号</th>
+                                <th>MES条码</th>
+                                <th>卡号</th>
+                                <th>订单号</th>
+                                <th>成品码</th>
+                                <th>冷媒数量</th>
+                                <th>冷媒类型</th>
+                                <th>上线时间</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div class="launch-scroll-container">
+                        <div class="launch-scroll-content" id="launchScrollContent">
+                            <table>
+                                <tbody id="productTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const productData = [
+            { id: '001', mesCode: 'MES202403001', cardNo: 'CARD-001', orderNo: 'ORD202403001', productCode: 'CPR-8800', refrigerantQty: 15, refrigerant: 'R32', time: '2024-03-23 08:30:15', status: 'online' },
+            { id: '002', mesCode: 'MES202403002', cardNo: 'CARD-002', orderNo: 'ORD202403002', productCode: 'CPR-8801', refrigerantQty: 20, refrigerant: 'R410A', time: '2024-03-23 08:32:42', status: 'pending' },
+            { id: '003', mesCode: 'MES202403003', cardNo: 'CARD-003', orderNo: 'ORD202403003', productCode: 'CPR-8802', refrigerantQty: 10, refrigerant: 'R32', time: '2024-03-23 08:35:18', status: 'online' },
+            { id: '004', mesCode: 'MES202403004', cardNo: 'CARD-004', orderNo: 'ORD202403004', productCode: 'CPR-8803', refrigerantQty: 25, refrigerant: 'R410A', time: '2024-03-23 08:38:05', status: 'online' },
+            { id: '005', mesCode: 'MES202403005', cardNo: 'CARD-005', orderNo: 'ORD202403005', productCode: 'CPR-8804', refrigerantQty: 15, refrigerant: 'R32', time: '2024-03-23 08:41:22', status: 'pending' },
+            { id: '006', mesCode: 'MES202403006', cardNo: 'CARD-006', orderNo: 'ORD202403006', productCode: 'CPR-8805', refrigerantQty: 20, refrigerant: 'R410A', time: '2024-03-23 08:44:38', status: 'online' },
+            { id: '007', mesCode: 'MES202403007', cardNo: 'CARD-007', orderNo: 'ORD202403007', productCode: 'CPR-8806', refrigerantQty: 12, refrigerant: 'R32', time: '2024-03-23 08:47:55', status: 'online' },
+            { id: '008', mesCode: 'MES202403008', cardNo: 'CARD-008', orderNo: 'ORD202403008', productCode: 'CPR-8807', refrigerantQty: 22, refrigerant: 'R410A', time: '2024-03-23 08:51:12', status: 'pending' },
+            { id: '009', mesCode: 'MES202403009', cardNo: 'CARD-009', orderNo: 'ORD202403009', productCode: 'CPR-8808', refrigerantQty: 18, refrigerant: 'R32', time: '2024-03-23 08:54:29', status: 'online' },
+            { id: '010', mesCode: 'MES202403010', cardNo: 'CARD-010', orderNo: 'ORD202403010', productCode: 'CPR-8809', refrigerantQty: 16, refrigerant: 'R410A', time: '2024-03-23 08:57:46', status: 'online' },
+        ];
+
+        function renderTable() {
+            const tbody = document.getElementById('productTable');
+            const checkIcon = '<span class="status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>';
+            const crossIcon = '<span class="status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>';
+
+            let html = productData.map(item => `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>${item.mesCode}</td>
+                    <td>${item.cardNo}</td>
+                    <td>${item.orderNo}</td>
+                    <td>${item.productCode}</td>
+                    <td>${item.refrigerantQty} kg</td>
+                    <td>${item.refrigerant}</td>
+                    <td>${item.time}</td>
+                    <td><span class="status-tag ${item.status === 'online' ? 'status-online' : 'status-pending'}">${item.status === 'online' ? checkIcon : crossIcon}${item.status === 'online' ? '已上线' : '未上线'}</span></td>
+                </tr>
+            `).join('');
+
+            // Duplicate content for seamless scrolling
+            html += html;
+            tbody.innerHTML = html;
+        }
+
+        renderTable();
+
+        setInterval(() => {
+            const newId = String(productData.length + 1).padStart(3, '0');
+            const now = new Date();
+            const timeStr = now.toISOString().slice(0, 19).replace('T', ' ');
+            const newItem = {
+                id: newId,
+                mesCode: `MES202403${newId}`,
+                cardNo: `CARD-${newId.padStart(3, '0')}`,
+                orderNo: `ORD202403${newId}`,
+                productCode: `CPR-${8800 + parseInt(newId)}`,
+                refrigerantQty: Math.floor(Math.random() * 20) + 10,
+                refrigerant: Math.random() > 0.5 ? 'R32' : 'R410A',
+                time: timeStr,
+                status: 'online'
+            };
+            productData.unshift(newItem);
+            if (productData.length > 15) productData.pop();
+            renderTable();
+        }, 5000);
+    </script>
+</body>
+</html>
